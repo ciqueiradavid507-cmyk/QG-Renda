@@ -5,3 +5,6 @@ __pycache__/
 *.sqlite3-shm
 *.sqlite3-wal
 data/
+!institutional_site/data/
+institutional_site/data/*
+!institutional_site/data/automation_sources.json

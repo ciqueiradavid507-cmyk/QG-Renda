@@ -1,0 +1,213 @@
+name: Manutenção das fontes do portal
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manutencao-portal.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: manutencao-fontes-qg-renda
+  cancel-in-progress: false
+
+jobs:
+  verificar-fontes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Obter somente a branch principal para o relatório mensal
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Atualizar fontes e verificar o estado da manutenção
+        id: maintenance
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import socket
+          import time
+          from datetime import datetime, timedelta, timezone
+          from pathlib import Path
+          from urllib.error import HTTPError, URLError
+          from urllib.parse import urlsplit, urlunsplit
+          from urllib.request import HTTPRedirectHandler, Request, build_opener
+          from zoneinfo import ZoneInfo
+
+          ENDPOINT = "https://qg-renda-portal-independente.onrender.com/api/automation?wait=true"
+          ATTEMPTS = 4
+          TIMEOUT_SECONDS = 45
+          MAX_BYTES = 1024 * 1024
+          REPORT_PATH = Path("reports/portal-maintenance.json")
+
+          class InvalidState(Exception):
+              pass
+
+          class NoRedirect(HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+
+          def require(condition, reason):
+              if not condition:
+                  raise InvalidState(reason)
+
+          def validate_state(payload, now=None):
+              require(isinstance(payload, dict), "invalid_payload")
+              require(payload.get("enabled") is True, "automation_disabled")
+              require(not payload.get("last_error"), "backend_refresh_failed")
+              require(payload.get("refreshing") is False, "refresh_incomplete")
+              raw_checked = payload.get("last_checked_at")
+              require(isinstance(raw_checked, str) and bool(raw_checked), "missing_last_check")
+              try:
+                  checked = datetime.fromisoformat(raw_checked.replace("Z", "+00:00"))
+              except ValueError:
+                  raise InvalidState("invalid_last_check") from None
+              require(checked.tzinfo is not None, "missing_check_timezone")
+              checked = checked.astimezone(timezone.utc)
+              age = (now or datetime.now(timezone.utc)) - checked
+              require(-timedelta(minutes=5) <= age <= timedelta(hours=8), "stale_or_future_check")
+              summary = payload.get("summary")
+              require(isinstance(summary, dict), "missing_summary")
+              for key in ("total", "ok", "unavailable", "changed"):
+                  require(type(summary.get(key)) is int and summary[key] >= 0, "invalid_counts")
+              require(summary["total"] == 7, "unexpected_source_count")
+              require(summary["ok"] + summary["unavailable"] == 7, "incomplete_source_check")
+              require(summary["changed"] <= 7, "invalid_change_count")
+              sources = payload.get("sources")
+              require(isinstance(sources, list) and len(sources) == 7, "invalid_sources")
+              require(all(isinstance(source, dict) for source in sources), "invalid_source_record")
+              return summary, checked
+
+          def public_source(source):
+              require(isinstance(source.get("id"), str) and bool(source["id"]), "missing_source_id")
+              require(source.get("status") in {"ok", "unavailable"}, "invalid_source_status")
+              require(isinstance(source.get("url"), str), "missing_source_url")
+              try:
+                  url = urlsplit(source["url"])
+                  require(
+                      url.scheme == "https" and url.hostname in {"cartilha.cert.br", "www.bcb.gov.br", "www.gov.br"}
+                      and url.username is None and url.password is None and url.port is None,
+                      "unexpected_source_url",
+                  )
+              except ValueError:
+                  raise InvalidState("invalid_source_url") from None
+              require(isinstance(source.get("title"), str), "missing_source_title")
+              last_success = source.get("last_success_at")
+              if last_success is not None:
+                  require(isinstance(last_success, str), "invalid_source_success_time")
+                  try:
+                      parsed_success = datetime.fromisoformat(last_success.replace("Z", "+00:00"))
+                  except ValueError:
+                      raise InvalidState("invalid_source_success_time") from None
+                  require(parsed_success.tzinfo is not None, "missing_source_success_timezone")
+                  last_success = parsed_success.astimezone(timezone.utc).isoformat()
+              return {
+                  "id": " ".join(source["id"].split())[:80],
+                  "url": urlunsplit((url.scheme, url.netloc, url.path, "", "")),
+                  "title": " ".join(source["title"].split())[:300],
+                  "status": source["status"],
+                  "last_success_at": last_success,
+              }
+
+          def write_monthly_report(payload, summary, checked, now=None, report_path=REPORT_PATH):
+              local_now = (now or datetime.now(timezone.utc)).astimezone(ZoneInfo("America/Belem"))
+              period = local_now.strftime("%Y-%m")
+              if report_path.exists():
+                  try:
+                      previous = json.loads(report_path.read_text(encoding="utf-8"))
+                  except (OSError, json.JSONDecodeError):
+                      raise InvalidState("invalid_monthly_report") from None
+                  require(isinstance(previous, dict), "invalid_monthly_report")
+                  previous_period = previous.get("period")
+                  require(isinstance(previous_period, str), "missing_report_period")
+                  if previous_period == period:
+                      return False
+                  require(previous_period < period, "monthly_report_ahead")
+              sources = [public_source(source) for source in payload["sources"]]
+              require(len({source["id"] for source in sources}) == 7, "duplicate_source_ids")
+              report = {
+                  "schema_version": 1,
+                  "period": period,
+                  "timezone": "America/Belem",
+                  "recorded_at": local_now.isoformat(),
+                  "checked_at": checked.isoformat(),
+                  "summary": {key: summary[key] for key in ("total", "ok", "unavailable", "changed")},
+                  "sources": sources,
+              }
+              report_path.parent.mkdir(parents=True, exist_ok=True)
+              temporary = report_path.with_suffix(".tmp")
+              temporary.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+              temporary.replace(report_path)
+              return True
+
+          def check_once():
+              request = Request(ENDPOINT, headers={
+                  "Accept": "application/json",
+                  "User-Agent": "QG-Renda-Maintenance/1.0",
+              })
+              with build_opener(NoRedirect()).open(request, timeout=TIMEOUT_SECONDS) as response:
+                  require(response.status == 200, "unexpected_http_status")
+                  body = response.read(MAX_BYTES + 1)
+                  require(len(body) <= MAX_BYTES, "response_too_large")
+              payload = json.loads(body)
+              summary, checked = validate_state(payload)
+              return payload, summary, checked
+
+          def main():
+              for attempt in range(1, ATTEMPTS + 1):
+                  try:
+                      payload, summary, checked = check_once()
+                      report_changed = write_monthly_report(payload, summary, checked)
+                      print(
+                          "Manutenção concluída: "
+                          f"total={summary['total']}, ok={summary['ok']}, "
+                          f"unavailable={summary['unavailable']}, changed={summary['changed']}."
+                      )
+                      print("Última checagem UTC:", checked.isoformat())
+                      print("Relatório mensal preparado." if report_changed else "Relatório deste mês já registrado; nenhum arquivo alterado.")
+                      output = os.environ.get("GITHUB_OUTPUT")
+                      if output:
+                          with open(output, "a", encoding="utf-8") as file:
+                              file.write("report_changed=" + str(report_changed).lower() + "\n")
+                      return
+                  except InvalidState as exc:
+                      reason = str(exc)
+                  except HTTPError as exc:
+                      reason = f"http_{exc.code}"
+                  except (TimeoutError, socket.timeout):
+                      reason = "timeout"
+                  except URLError:
+                      reason = "network_error"
+                  except (json.JSONDecodeError, UnicodeDecodeError):
+                      reason = "invalid_json"
+                  except Exception:
+                      reason = "unexpected_check_error"
+                  print(f"Tentativa {attempt}/{ATTEMPTS} sem estado válido: {reason}.")
+                  if attempt < ATTEMPTS:
+                      time.sleep(5 * (2 ** (attempt - 1)))
+              raise SystemExit("Falha na manutenção: o backend não confirmou uma checagem válida e recente.")
+
+          if __name__ == "__main__":
+              main()
+          PY
+      - name: Registrar somente o relatório mensal
+        if: steps.maintenance.outputs.report_changed == 'true'
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- reports/portal-maintenance.json
+          if git diff --cached --quiet -- reports/portal-maintenance.json; then
+            echo 'Nenhuma mudança no relatório mensal.'
+            exit 0
+          fi
+          git commit -m 'Registra relatório mensal de manutenção do portal' --only -- reports/portal-maintenance.json
+          git push origin HEAD:main

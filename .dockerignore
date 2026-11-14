@@ -2,5 +2,8 @@
 .env
 *.sqlite3*
 data
+!institutional_site/data
+institutional_site/data/*
+!institutional_site/data/automation_sources.json
 __pycache__
 .pytest_cache

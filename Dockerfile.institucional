@@ -6,6 +6,7 @@ RUN useradd --uid 10002 --create-home portal
 COPY --chown=portal:portal requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 COPY --chown=portal:portal portal_institucional.py /app/portal_institucional.py
+COPY --chown=portal:portal portal_automation.py /app/portal_automation.py
 COPY --chown=portal:portal institutional_site /app/institutional_site
 USER portal
 ENV PORT=8000

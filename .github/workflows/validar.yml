@@ -1,4 +1,4 @@
-name: Validar QG RENDA Demo
+name: Validar QG RENDA
 on:
   push:
   pull_request:
@@ -17,3 +17,8 @@ jobs:
         env:
           DEMO_ONLY: 'true'
         run: python -m unittest discover -s tests -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Testar atendimento automático
+        run: node --test tests/assistant.test.cjs

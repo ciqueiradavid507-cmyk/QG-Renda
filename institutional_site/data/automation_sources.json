@@ -1,0 +1,9 @@
+[
+  {"id":"seguranca","guide_id":"guia-seguranca","name":"CERT.br / NIC.br","url":"https://cartilha.cert.br/fasciculos/","description":"Fascículos da Cartilha de Segurança para Internet, publicados pelo CERT.br / NIC.br.","kind":"html"},
+  {"id":"planejamento","guide_id":"guia-planejamento","name":"Banco Central — Educação Financeira","url":"https://www.bcb.gov.br/content/cidadaniafinanceira/documentos_cidadania/Cuidando_do_seu_dinheiro_Gestao_de_Financas_Pessoais/caderno_cidadania_financeira.pdf","description":"Caderno de Educação Financeira do Banco Central: material de referência para orçamento pessoal e familiar (PDF).","kind":"pdf"},
+  {"id":"participacao","guide_id":"guia-missoes","name":"Fala.BR — Ouvidorias.gov / CGU","url":"https://www.gov.br/ouvidorias/pt-br/falabr","description":"Informações da CGU sobre manifestações de ouvidoria e acesso à informação pelo Fala.BR.","kind":"html"},
+  {"id":"servicos","guide_id":"guia-fontes","name":"Catálogo de serviços — gov.br","url":"https://www.gov.br/pt-br/servicos","description":"Catálogo oficial de serviços públicos, com requisitos, etapas e canais de atendimento.","kind":"html"},
+  {"id":"acessibilidade","guide_id":"guia-acessibilidade","name":"Governo Digital — Acessibilidade","url":"https://www.gov.br/governodigital/pt-br/acessibilidade-e-usuario/acessibilidade-digital","description":"Orientações e recursos de acessibilidade digital publicados pelo Governo Digital.","kind":"html"},
+  {"id":"govbr","guide_id":null,"name":"Portal gov.br","url":"https://www.gov.br/","description":"Portal de informações e serviços do Governo Federal.","kind":"html"},
+  {"id":"receita","guide_id":null,"name":"Receita Federal do Brasil","url":"https://www.gov.br/receitafederal/pt-br","description":"Canal oficial da Receita Federal para informações e serviços fiscais federais.","kind":"html"}
+]

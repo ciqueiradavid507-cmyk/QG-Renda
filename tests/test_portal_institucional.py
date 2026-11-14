@@ -54,7 +54,8 @@ class InstitutionalPortalTests(unittest.TestCase):
         self.assertEqual(r.headers["x-frame-options"], "DENY")
         self.assertEqual(r.headers["x-content-type-options"], "nosniff")
         self.assertIn("form-action 'none'", r.headers["content-security-policy"])
-        self.assertIn("connect-src 'none'", r.headers["content-security-policy"])
+        self.assertIn("connect-src 'self'", r.headers["content-security-policy"])
+        self.assertIn("script-src 'self' 'unsafe-inline'", r.headers["content-security-policy"])
 
 
 if __name__ == "__main__":
