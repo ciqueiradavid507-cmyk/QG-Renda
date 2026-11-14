@@ -636,3 +636,7 @@ def admin_privacy(user=Depends(admin_user)):
 # Rotas isoladas do Asaas Sandbox: sem repasses nem créditos reais.
 from asaas_sandbox import install_asaas_sandbox
 install_asaas_sandbox(app, connect, admin_user)
+
+# Woovi: apenas cobranças Sandbox e webhooks assinados, sem alterar saldos.
+from woovi_sandbox import install_woovi_sandbox
+install_woovi_sandbox(app, connect, admin_user)
