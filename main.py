@@ -632,3 +632,7 @@ def admin_privacy(user=Depends(admin_user)):
         rows = con.execute('''SELECT p.*,u.email,u.name FROM privacy_requests p
             JOIN users u ON u.id=p.user_id ORDER BY p.id DESC LIMIT 100''').fetchall()
     return {'requests': [dict(row) for row in rows]}
+
+# Rotas isoladas do Asaas Sandbox: sem repasses nem créditos reais.
+from asaas_sandbox import install_asaas_sandbox
+install_asaas_sandbox(app, connect, admin_user)
