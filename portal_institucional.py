@@ -7,9 +7,11 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 ROOT = Path(__file__).resolve().parent
 app = FastAPI(title="QG RENDA — Portal Independente", docs_url=None, redoc_url=None, openapi_url=None)
+app.mount("/assets", StaticFiles(directory=ROOT / "institutional_site" / "assets"), name="assets")
 
 
 @app.get("/health")

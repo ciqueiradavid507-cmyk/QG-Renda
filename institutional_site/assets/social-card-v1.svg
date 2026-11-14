@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">QG RENDA — Portal Cívico Independente</title>
+  <desc id="description">Guias práticos de cidadania digital e caminhos para fontes oficiais. Acesso gratuito e sem cadastro.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#102b49"/>
+      <stop offset="1" stop-color="#245a80"/>
+    </linearGradient>
+    <clipPath id="canvas"><rect width="1200" height="630"/></clipPath>
+  </defs>
+  <g clip-path="url(#canvas)">
+    <rect width="1200" height="630" fill="url(#background)"/>
+    <circle cx="1160" cy="100" r="340" fill="#8cb5d6" fill-opacity=".07"/>
+    <circle cx="1160" cy="100" r="425" fill="none" stroke="#c6dcf1" stroke-opacity=".11" stroke-width="2"/>
+    <circle cx="1160" cy="100" r="510" fill="none" stroke="#c6dcf1" stroke-opacity=".06" stroke-width="2"/>
+    <rect x="64" y="56" width="74" height="74" rx="18" fill="#ffffff" fill-opacity=".09" stroke="#c6dcf1" stroke-opacity=".3"/>
+    <text x="73" y="106" font-family="Arial,DejaVu Sans,sans-serif" font-size="40" font-weight="900" letter-spacing="-2" fill="#ffffff">Q<tspan fill="#f6cd80">R</tspan></text>
+    <g font-family="DejaVu Sans,Arial,sans-serif">
+      <text x="158" y="103" fill="#ffffff" font-size="43" font-weight="800" letter-spacing="-1.5">QG RENDA</text>
+      <text x="64" y="221" fill="#f6cd80" font-size="19" font-weight="700" letter-spacing="3">PORTAL CÍVICO INDEPENDENTE</text>
+      <text x="60" y="308" fill="#ffffff" font-size="64" font-weight="800" letter-spacing="-2.3">Cidadania digital,</text>
+      <text x="60" y="385" fill="#ffffff" font-size="64" font-weight="800" letter-spacing="-2.3">com informação clara.</text>
+      <text x="64" y="449" fill="#d6e6f3" font-size="27">Guias práticos e caminhos para fontes oficiais.</text>
+      <line x1="64" y1="498" x2="1136" y2="498" stroke="#d6e6f3" stroke-opacity=".23"/>
+      <circle cx="72" cy="551" r="6" fill="#f6cd80"/>
+      <text x="91" y="560" fill="#ffffff" font-size="24" font-weight="600">Acesso gratuito</text>
+      <text x="900" y="560" fill="#d6e6f3" font-size="24">Sem cadastro</text>
+    </g>
+  </g>
+</svg>
