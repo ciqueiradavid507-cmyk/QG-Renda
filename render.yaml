@@ -9,6 +9,12 @@ services:
     envVars:
       - key: DEMO_ONLY
         value: "true"
+      - key: ASAAS_SANDBOX_ENABLED
+        value: "true"
+      - key: ASAAS_SANDBOX_OUTBOUND_ENABLED
+        value: "false"
+      - key: ASAAS_SANDBOX_TRANSFER_TESTS_ENABLED
+        value: "false"
       - key: COOKIE_SECURE
         value: "true"
       - key: DATABASE_PATH
