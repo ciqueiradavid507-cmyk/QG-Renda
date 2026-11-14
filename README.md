@@ -47,3 +47,7 @@ python -m compileall -q main.py
 ```
 
 Cuidado: sem `DEMO_ONLY=true`, o código possui operações de carteira para uma futura versão comercial. **Nunca disponibilize publicamente esse modo sem auditoria, persistência adequada, adequação legal e integração de pagamentos.**
+
+### Woovi Sandbox — integração experimental
+
+Uma integração isolada com a [Woovi em ambiente de testes](docs/WOOVI_SANDBOX.md) está disponível **somente nesta branch**. Ela mantém as chamadas externas desativadas, valida assinaturas RSA de webhooks e não altera saldos nem permite saques reais. Nenhuma alteração foi aplicada ao site publicado no Render.
