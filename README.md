@@ -26,6 +26,12 @@ Esta implantação é uma **demonstração sem pagamentos reais**. O serviço pr
 - A política de privacidade e os termos são modelos de demonstração e necessitam revisão jurídica para um serviço comercial.
 - Não há declaração de certificação LGPD ou autorização governamental.
 
+## Integração Asaas (somente Sandbox)
+
+O projeto inclui um módulo **opcional** para homologar cobranças Pix e transferências fictícias do Asaas. Ele **não ativa pagamentos verdadeiros**, não credita carteiras e rejeita chaves de produção. A comunicação externa começa desativada; a ativação exige uma conta Sandbox e credenciais secretas configuradas exclusivamente no Render.
+
+Consulte o guia completo: [docs/ASAAS_SANDBOX.md](docs/ASAAS_SANDBOX.md).
+
 ## Desenvolvimento local
 
 ```bash
