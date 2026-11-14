@@ -4,6 +4,14 @@ Portal responsivo de microtarefas com API FastAPI, autenticação, envio e revis
 
 **Não é uma plataforma de renda ativa.** A edição do Render Free executa com `DEMO_ONLY=true`, sem pagamentos, saques ou promessas de ganhos. Este repositório é público: **não envie senhas, dados reais ou arquivos .env**.
 
+## Implantação com um clique (Render)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fciqueiradavid507-cmyk%2FQG-Renda)
+
+Clique em **Deploy to Render**, entre na sua própria conta Render, autorize o GitHub, confira o repositório `ciqueiradavid507-cmyk/QG-Renda` e selecione o plano **Free**. Preencha **apenas no Render** os campos secretos `BOOTSTRAP_ADMIN_EMAIL` e `BOOTSTRAP_ADMIN_PASSWORD`; não os coloque em commits ou mensagens de chat. Revise os recursos apresentados antes de confirmar qualquer custo.
+
+Esta implantação é uma **demonstração sem pagamentos reais**. O serviço precisa manter `DEMO_ONLY=true` e o plano gratuito pode perder dados locais ao reiniciar.
+
 ## Implantar gratuitamente no Render
 
 1. Conecte o Render ao GitHub e selecione o repositório `ciqueiradavid507-cmyk/QG-Renda`.
