@@ -8,8 +8,8 @@ from __future__ import annotations
 import hmac
 import json
 import os
-import re
 from datetime import date, timedelta, datetime, timezone
+from contextlib import closing
 from typing import Literal
 
 import httpx
@@ -17,7 +17,6 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
 ASAAS_SANDBOX_BASE = "https://api-sandbox.asaas.com/v3"
-ASAAS_SANDBOX_HOST = "api-sandbox.asaas.com"
 
 
 def _yes(name: str) -> bool:
@@ -170,7 +169,7 @@ def install_asaas_sandbox(app, connect, admin_user):
         resource = event.get("payment") or event.get("transfer") or {}
         resource_id = resource.get("id") if isinstance(resource, dict) else None
         resource_id = resource_id if isinstance(resource_id, str) else None
-        with connect() as con:
+        with closing(connect()) as con:
             con.execute("""CREATE TABLE IF NOT EXISTS asaas_sandbox_events (
                 id TEXT PRIMARY KEY, event_type TEXT NOT NULL,
                 resource_id TEXT, received_at TEXT NOT NULL
@@ -184,7 +183,7 @@ def install_asaas_sandbox(app, connect, admin_user):
 
     @router.get("/api/admin/asaas/sandbox/events")
     def events(admin=Depends(admin_user)):
-        with connect() as con:
+        with closing(connect()) as con:
             con.execute("""CREATE TABLE IF NOT EXISTS asaas_sandbox_events (
                 id TEXT PRIMARY KEY, event_type TEXT NOT NULL,
                 resource_id TEXT, received_at TEXT NOT NULL
