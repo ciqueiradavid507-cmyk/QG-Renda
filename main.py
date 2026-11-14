@@ -22,12 +22,13 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 import re
+from financial_readiness import require_demonstration_mode, financial_readiness_report
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = Path(os.environ.get('DATABASE_PATH', str(BASE_DIR / 'data' / 'qg-renda.sqlite3')))
 COOKIE_SECURE = os.environ.get('COOKIE_SECURE', 'false').lower() == 'true'
 APP_ORIGIN = (os.environ.get('APP_ORIGIN') or ('https://' + os.environ['RENDER_EXTERNAL_HOSTNAME'] if os.environ.get('RENDER_EXTERNAL_HOSTNAME') else '')).rstrip('/')
-DEMO_ONLY = os.environ.get('DEMO_ONLY', 'false').lower() == 'true'
+DEMO_ONLY = os.environ.get('DEMO_ONLY', 'true').lower() == 'true'
 ADMIN_EMAIL = os.environ.get('BOOTSTRAP_ADMIN_EMAIL', '').strip().lower()
 ADMIN_PASSWORD = os.environ.get('BOOTSTRAP_ADMIN_PASSWORD', '')
 MIN_WITHDRAWAL_CENTS = max(100, int(os.environ.get('MIN_WITHDRAWAL_CENTS', '2000')))
@@ -169,6 +170,7 @@ def init_db():
 
 @app.on_event('startup')
 def startup():
+    require_demonstration_mode(DEMO_ONLY)
     init_db()
 
 
@@ -636,3 +638,8 @@ def admin_privacy(user=Depends(admin_user)):
 # Rotas isoladas do Asaas Sandbox: sem repasses nem créditos reais.
 from asaas_sandbox import install_asaas_sandbox
 install_asaas_sandbox(app, connect, admin_user)
+
+@app.get('/api/admin/finance/readiness')
+def admin_finance_readiness(user=Depends(admin_user)):
+    """Relatório de bloqueios de produção, restrito a administradores."""
+    return financial_readiness_report(DEMO_ONLY)
