@@ -1,0 +1,19 @@
+# QG RENDA — demonstração no Render Free, sem pagamentos reais.
+services:
+  - type: web
+    name: qg-renda-demo
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    autoDeployTrigger: 'off'
+    envVars:
+      - key: DEMO_ONLY
+        value: "true"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: DATABASE_PATH
+        value: /app/data/qg-renda.sqlite3
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        sync: false
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
