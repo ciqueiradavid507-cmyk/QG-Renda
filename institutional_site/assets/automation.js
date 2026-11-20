@@ -83,6 +83,21 @@
         var source = sources.find(function (entry) { return entry && entry.id === id; });
         if (source) renderSource(block, source);
       });
+      window.QGRendaAutomation = {
+        last_checked_at: data.last_checked_at || null,
+        refreshing: data.refreshing === true,
+        last_error: data.last_error || null,
+        sources: sources.map(function (source) {
+          return {
+            id: text(source.id, 40), name: text(source.name, 120),
+            url: text(source.url, 1200), status: source.status,
+            http_status: source.http_status || null,
+            checked_at: source.checked_at || null,
+            last_success_at: source.last_success_at || null
+          };
+        })
+      };
+      document.dispatchEvent(new CustomEvent('qgrenda:automation-updated', { detail: window.QGRendaAutomation }));
       return data.refreshing === true;
     }
 
@@ -103,6 +118,7 @@
         delay = render(await response.json()) ? 5000 : 300000;
       } catch (_) {
         summary.textContent = 'Não foi possível consultar a verificação agora. Os links para as fontes continuam disponíveis nos guias.';
+        if (window.QGRendaAutomation) window.QGRendaAutomation.last_error = 'status_unavailable';
         delay = 60000;
       } finally {
         clearTimeout(timeout);
