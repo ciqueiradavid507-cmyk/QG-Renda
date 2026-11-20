@@ -76,6 +76,12 @@ def create_app(automation_factory=AutomationManager, support_factory=AISupport):
             "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
         })
 
+    @app.get("/api/support/status")
+    async def support_status():
+        return JSONResponse(app.state.ai_support.status(), headers={
+            "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
+        })
+
     @app.post("/api/support/respond")
     async def support_respond(request: Request):
         def error(reason, status=400):

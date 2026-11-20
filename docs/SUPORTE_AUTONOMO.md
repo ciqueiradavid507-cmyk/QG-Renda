@@ -43,6 +43,7 @@ O conector disponível `mcp__codex_apps__render_update_environment_variables` pe
 ## Contrato do atendimento do portal
 
 - `GET /api/support/config`: informa se o modo IA está configurado e disponível para seleção, pelo booleano `ai_available`.
+- `GET /api/support/status`: diagnóstico de configuração com `ai_available` e `configuration_issue`. O motivo é uma categoria fixa: `key_missing`, `key_invalid`, `model_invalid`, `ai_disabled`, `usage_unavailable` ou `null` quando disponível. Não retorna chave, trecho, tamanho, modelo configurado nem valores de variáveis. O diagnóstico não chama o provedor e não comprova crédito ou autorização da conta.
 - `POST /api/support/respond`: recebe o pedido de atendimento e retorna `mode`, `reply` e `links`, além de um `reason` opcional quando houver fallback. A interface usa o modo efetivamente retornado para identificar a origem da resposta.
 
 Sem chave própria configurada, o suporte local continua funcionando e a opção externa permanece indisponível. A chave não é necessária para abrir o site, ler os guias ou consultar as fontes públicas.

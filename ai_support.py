@@ -328,7 +328,9 @@ class AISupport:
     def __init__(self, api_key=None, model=None, transport=None, clock=time.time,
                  limiter=None, context_path=ROOT / "institutional_site" / "index.html",
                  request_timeout=25.0):
-        self._api_key = _real_key(os.getenv("OPENAI_API_KEY", "") if api_key is None else api_key)
+        supplied_key = os.getenv("OPENAI_API_KEY", "") if api_key is None else api_key
+        self._key_present = isinstance(supplied_key, str) and bool(supplied_key.strip())
+        self._api_key = _real_key(supplied_key)
         selected = os.getenv("OPENAI_MODEL", DEFAULT_MODEL) if model is None else model
         selected = selected.strip() or DEFAULT_MODEL if isinstance(selected, str) else None
         self.model = selected if isinstance(selected, str) and re.fullmatch(r"[A-Za-z0-9._:-]{1,80}", selected) else None
@@ -342,6 +344,21 @@ class AISupport:
 
     def config(self):
         return {"ai_available": bool(self._api_key and self.model and self.limiter.daily_limit > 0 and not self.limiter._storage_error)}
+
+    def status(self):
+        """Report only a fixed configuration category, never credential details."""
+        issue = None
+        if not self._key_present:
+            issue = "key_missing"
+        elif not self._api_key:
+            issue = "key_invalid"
+        elif not self.model:
+            issue = "model_invalid"
+        elif self.limiter.daily_limit <= 0:
+            issue = "ai_disabled"
+        elif self.limiter._storage_error:
+            issue = "usage_unavailable"
+        return {"ai_available": issue is None, "configuration_issue": issue}
 
     @staticmethod
     def _local(reply, reason, links=None):
