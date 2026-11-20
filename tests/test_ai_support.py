@@ -236,6 +236,112 @@ class AISupportTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(calls), 1)
         self.assertEqual(support.limiter._active, 0)
 
+    async def test_quota_error_codes_are_classified_without_echo_or_retry(self):
+        errors = ({"code": "insufficient_quota"}, {"code": "billing_hard_limit_reached"},
+                  {"code": None, "type": "insufficient_quota"},
+                  {"code": {}, "type": "billing_hard_limit_reached"})
+        for error in errors:
+            calls = []
+
+            def handle(request):
+                calls.append(request)
+                return httpx.Response(429, json={"error": {**error, "message": FAKE_KEY + " " + QUESTION}})
+
+            support = self.support(handle)
+            result = await support.respond(QUESTION, [], "client")
+            self.assertEqual(result["reason"], "provider_quota_exhausted")
+            self.assertEqual(result["mode"], "local")
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(support.limiter._active, 0)
+            self.assertNotIn(FAKE_KEY, str(result))
+            self.assertNotIn(QUESTION, str(result))
+
+    async def test_unknown_malformed_and_reflected_error_messages_keep_generic_limit(self):
+        bodies = [b"{broken", b"[]", b"null", json.dumps({"error": "insufficient_quota"}).encode(),
+                  json.dumps({"error": {"code": [], "type": {}, "message": "insufficient_quota " + FAKE_KEY}}).encode(),
+                  json.dumps({"error": {"code": "rate_limit_exceeded", "type": "tokens", "message": QUESTION}}).encode()]
+        for body in bodies:
+            calls = []
+
+            def handle(request):
+                calls.append(request)
+                return httpx.Response(429, content=body)
+
+            support = self.support(handle)
+            result = await support.respond(QUESTION, [], "client")
+            self.assertEqual(result["reason"], "provider_rate_limited")
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(support.limiter._active, 0)
+            self.assertNotIn(FAKE_KEY, str(result))
+            self.assertNotIn(QUESTION, str(result))
+
+    async def test_specific_provider_quota_codes_take_precedence_over_general_type(self):
+        expected = {
+            "credit_balance_exhausted": "provider_credits_exhausted",
+            "organization_spend_limit_exceeded": "provider_spend_limit",
+            "project_spend_limit_exceeded": "provider_spend_limit",
+            "organization_usage_limit_exceeded": "provider_usage_limit",
+            "insufficient_quota": "provider_quota_exhausted",
+            "billing_hard_limit_reached": "provider_quota_exhausted",
+        }
+        for code, reason in expected.items():
+            calls = []
+
+            def handle(request):
+                calls.append(request)
+                return httpx.Response(429, json={"error": {
+                    "code": code, "type": "insufficient_quota", "message": FAKE_KEY + " " + QUESTION}})
+
+            support = self.support(handle)
+            result = await support.respond(QUESTION, [], "client")
+            self.assertEqual(result["reason"], reason, code)
+            self.assertEqual(result["mode"], "local")
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(support.limiter._active, 0)
+            self.assertNotIn(FAKE_KEY, str(result))
+            self.assertNotIn(QUESTION, str(result))
+
+    async def test_oversized_error_body_stops_reading_without_quota_guess(self):
+        reads, calls = [], []
+
+        class ErrorBody(httpx.AsyncByteStream):
+            async def __aiter__(self):
+                for index in range(100):
+                    reads.append(index)
+                    yield b" " * 1024
+                yield b'{"error":{"code":"insufficient_quota"}}'
+
+        def handle(request):
+            calls.append(request)
+            return httpx.Response(429, stream=ErrorBody())
+
+        support = self.support(handle)
+        result = await support.respond(QUESTION, [], "client")
+        self.assertEqual(result["reason"], "provider_rate_limited")
+        self.assertLessEqual(len(reads), 9)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(support.limiter._active, 0)
+
+    async def test_slow_error_body_obeys_total_timeout_without_retry(self):
+        calls = []
+
+        class SlowErrorBody(httpx.AsyncByteStream):
+            async def __aiter__(self):
+                await asyncio.sleep(1)
+                yield b'{"error":{"code":"insufficient_quota"}}'
+
+        def handle(request):
+            calls.append(request)
+            return httpx.Response(429, stream=SlowErrorBody())
+
+        support = self.support(handle, request_timeout=.025)
+        started = time.monotonic()
+        result = await support.respond(QUESTION, [], "client")
+        self.assertLess(time.monotonic() - started, .5)
+        self.assertEqual(result["reason"], "provider_timeout")
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(support.limiter._active, 0)
+
     async def test_daily_limit_is_persisted_without_conversation_or_ip(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "usage.json"

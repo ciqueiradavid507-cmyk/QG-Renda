@@ -34,6 +34,7 @@ MAX_HISTORY_ITEMS = 4
 MAX_HISTORY_CHARS = 300
 MAX_OUTPUT_TOKENS = 600
 MAX_PROVIDER_BYTES = 128 * 1024
+MAX_PROVIDER_ERROR_BYTES = 8 * 1024
 DEFAULT_COUNTER_PATH = Path(tempfile.gettempdir()) / "qg-renda-ai" / "usage.json"
 REFERENCE_HOSTS = frozenset({"www.gov.br", "gov.br", "www.bcb.gov.br", "bcb.gov.br", "cartilha.cert.br"})
 EMAIL = re.compile(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", re.UNICODE)
@@ -483,7 +484,40 @@ class AISupport:
                 async with httpx.AsyncClient(timeout=self.request_timeout, transport=self.transport, follow_redirects=False) as client:
                     async with client.stream("POST", RESPONSES_URL, headers={"Authorization": "Bearer " + self._api_key}, json=payload) as response:
                         if response.status_code == 429:
-                            return self._local("O provedor está ocupado no momento. Continue pelo assistente local ou pelos guias.", "provider_rate_limited")
+                            # Only fixed, known error codes may leave this branch.
+                            # Upstream messages can reflect user input or credentials.
+                            error_body = bytearray()
+                            oversized = False
+                            async for chunk in response.aiter_bytes(chunk_size=1024):
+                                if len(error_body) + len(chunk) > MAX_PROVIDER_ERROR_BYTES:
+                                    oversized = True
+                                    break
+                                error_body.extend(chunk)
+                            quota_reason = None
+                            if not oversized:
+                                try:
+                                    error_data = json.loads(error_body)
+                                    error = error_data.get("error") if isinstance(error_data, dict) else None
+                                    if isinstance(error, dict):
+                                        quota_codes = {
+                                            "credit_balance_exhausted": "provider_credits_exhausted",
+                                            "organization_spend_limit_exceeded": "provider_spend_limit",
+                                            "project_spend_limit_exceeded": "provider_spend_limit",
+                                            "organization_usage_limit_exceeded": "provider_usage_limit",
+                                            "insufficient_quota": "provider_quota_exhausted",
+                                            "billing_hard_limit_reached": "provider_quota_exhausted",
+                                        }
+                                        for field in ("code", "type"):
+                                            value = error.get(field)
+                                            quota_reason = quota_codes.get(value) if isinstance(value, str) else None
+                                            if quota_reason:
+                                                break
+                                except (ValueError, UnicodeError):
+                                    pass
+                            if quota_reason:
+                                return self._local("A IA está indisponível por limite de uso. Continue pelo assistente local ou pelos guias.",
+                                                   quota_reason)
+                            return self._local("O provedor limitou a consulta à IA. Continue pelo assistente local ou pelos guias.", "provider_rate_limited")
                         if response.status_code != 200:
                             return self._local("Não foi possível consultar a IA agora. Continue pelo assistente local ou pelos guias.", "provider_error")
                         body = bytearray()

@@ -131,7 +131,9 @@ def create_app(automation_factory=AutomationManager, support_factory=AISupport):
         if reason in {"not_configured", "provider_error", "provider_timeout", "support_unavailable",
                       "usage_unavailable", "unsafe_response"}:
             status = 503
-        elif reason in {"rate_limit", "global_rate_limit", "provider_rate_limited", "daily_limit", "busy"}:
+        elif reason in {"rate_limit", "global_rate_limit", "provider_rate_limited",
+                        "provider_quota_exhausted", "provider_credits_exhausted",
+                        "provider_spend_limit", "provider_usage_limit", "daily_limit", "busy"}:
             status = 429
         return JSONResponse(result, status_code=status, headers={
             "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",

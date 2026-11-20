@@ -84,6 +84,8 @@ Em HTTP/JSON puro, extraia o texto percorrendo `output`, selecionando itens `typ
 
 Resposta vazia, erro do provedor, limite excedido ou indisponibilidade devem produzir uma resposta local, identificada como tal. A integração não precisa de ferramentas externas, navegação arbitrária ou execução de ações para responder sobre os guias do portal.
 
+Em HTTP 429, o backend classifica os códigos conhecidos do provedor: `credit_balance_exhausted` como `provider_credits_exhausted`; `organization_spend_limit_exceeded` e `project_spend_limit_exceeded` como `provider_spend_limit`; `organization_usage_limit_exceeded` como `provider_usage_limit`; e `insufficient_quota` ou `billing_hard_limit_reached` como `provider_quota_exhausted`. Os outros casos retornam `provider_rate_limited`. O código específico tem prioridade sobre o tipo amplo do erro. Essa classificação lê uma resposta de erro limitada a 8 KiB e não divulga mensagens, credenciais ou conteúdo bruto do provedor. Um estado de configuração disponível não garante cota para responder.
+
 ## Limites operacionais e custos
 
 Os limites definidos para esta implementação são:
@@ -108,5 +110,6 @@ Conferidas em **20 de novembro de 2026**, por leitura pública de documentação
 - [GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna.md): ID, suporte a Responses e níveis de raciocínio.
 - [GPT-4.1 mini](https://developers.openai.com/api/docs/models/gpt-4.1-mini.md) e [GPT-5 mini](https://developers.openai.com/api/docs/models/gpt-5-mini.md): situação de depreciação.
 - [Controles de dados da API](https://platform.openai.com/docs/guides/your-data): armazenamento de estado e monitoramento de abuso.
+- [Códigos de erro da API](https://developers.openai.com/api/docs/guides/error-codes.md): limites temporários, créditos, gastos e cota de uso.
 - [Preços atuais da API](https://developers.openai.com/api/docs/pricing).
 - [Variáveis e segredos no Render](https://render.com/docs/configure-environment-variables): configuração no painel e diferença entre salvar e publicar.

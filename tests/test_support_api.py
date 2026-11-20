@@ -97,6 +97,9 @@ class SupportAPITests(unittest.TestCase):
         expected = {"not_configured": 503, "provider_error": 503, "provider_timeout": 503,
                     "usage_unavailable": 503, "unsafe_response": 503,
                     "rate_limit": 429, "global_rate_limit": 429, "provider_rate_limited": 429,
+                    "provider_quota_exhausted": 429,
+                    "provider_credits_exhausted": 429, "provider_spend_limit": 429,
+                    "provider_usage_limit": 429,
                     "daily_limit": 429, "busy": 429, "privacy": 200, "invariant": 200}
         for reason, status in expected.items():
             self.support.result = {"mode": "local", "reply": "Consulte os guias.", "links": [], "reason": reason}
